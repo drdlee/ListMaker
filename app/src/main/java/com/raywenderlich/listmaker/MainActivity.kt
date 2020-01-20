@@ -1,10 +1,12 @@
 package com.raywenderlich.listmaker
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
+import android.text.InputType
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -13,20 +15,46 @@ import kotlinx.android.synthetic.main.activity_main.*
 class MainActivity : AppCompatActivity() {
 
     lateinit var listRecyclerView: RecyclerView
+    val listDataManager: ListDataManager = ListDataManager(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
+        fab.setOnClickListener {
+            showCreateListDialog()
         }
 
-        listRecyclerView = findViewById(R.id.lists_recyclerview)
+        val lists = listDataManager.readLists()
+        listRecyclerView = findViewById<RecyclerView>(R.id.lists_recyclerview)
         listRecyclerView.layoutManager = LinearLayoutManager(this)
-        listRecyclerView.adapter = ListSelectionRecyclerViewAdapter()
+        listRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists)
+    }
+
+    private fun showCreateListDialog() {
+        val dialogTitle = getString(R.string.name_of_list)
+        val positiveButtonTitle = getString(R.string.create_list)
+
+        val builder = AlertDialog.Builder(this)
+        val listTitleEditText = EditText(this)
+        listTitleEditText.inputType =
+            InputType.TYPE_CLASS_TEXT // this is to tell android to show a text-based keyboard (instead of numpad keyboard)
+
+        builder.setTitle(dialogTitle)
+        builder.setView(listTitleEditText)
+
+        builder.setPositiveButton(positiveButtonTitle) { dialog, _ ->
+            val list = TaskList(listTitleEditText.text.toString()) // Create new lists
+            listDataManager.saveList(list) // add list to sharedPreferences
+
+            val recyclerAdapter = listRecyclerView.adapter as ListSelectionRecyclerViewAdapter // in order to access the method from adapter, need to cast it to its class first -
+            recyclerAdapter.addList(list) // and then use the method to add list to adapter
+
+            dialog.dismiss()
+        }
+
+        builder.create().show()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

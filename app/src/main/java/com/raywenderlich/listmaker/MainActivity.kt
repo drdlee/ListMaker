@@ -15,10 +15,9 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 
-class MainActivity : AppCompatActivity(), ListSelectionRecyclerViewAdapter.ListSelectionRecyclerViewClickListener {
+class MainActivity : AppCompatActivity(), ListSelectionFragment.OnFragmentInteractionListener {
 
-    lateinit var listRecyclerView: RecyclerView
-    val listDataManager: ListDataManager = ListDataManager(this)
+    private var listSelectionFragment: ListSelectionFragment = ListSelectionFragment.newInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,11 +27,6 @@ class MainActivity : AppCompatActivity(), ListSelectionRecyclerViewAdapter.ListS
         fab.setOnClickListener {
             showCreateListDialog()
         }
-
-        val lists = listDataManager.readLists()
-        listRecyclerView = findViewById<RecyclerView>(R.id.lists_recyclerview)
-        listRecyclerView.layoutManager = LinearLayoutManager(this)
-        listRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists, this)
     }
 
     private fun showCreateListDialog() {
@@ -49,10 +43,7 @@ class MainActivity : AppCompatActivity(), ListSelectionRecyclerViewAdapter.ListS
 
         builder.setPositiveButton(positiveButtonTitle) { dialog, _ ->
             val list = TaskList(listTitleEditText.text.toString()) // Create new lists
-            listDataManager.saveList(list) // add list to sharedPreferences
-
-            val recyclerAdapter = listRecyclerView.adapter as ListSelectionRecyclerViewAdapter // in order to access the method from adapter, need to cast it to its class first -
-            recyclerAdapter.addList(list) // and then use the method to add list to adapter
+            listSelectionFragment.addList(list)
 
             dialog.dismiss()
             showListDetail(list)
@@ -85,20 +76,14 @@ class MainActivity : AppCompatActivity(), ListSelectionRecyclerViewAdapter.ListS
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == LIST_DETAIL_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+        if (requestCode == LIST_DETAIL_REQUEST_CODE) {
             data?.let {
-                listDataManager.saveList(data.getParcelableExtra(INTENT_LIST_KEY) as TaskList)
-                updateLists()
+                listSelectionFragment.saveList(data.getParcelableExtra(INTENT_LIST_KEY) as TaskList)
             }
         }
     }
 
-    private fun updateLists() {
-        val lists = listDataManager.readLists()
-        lists_recyclerview.adapter = ListSelectionRecyclerViewAdapter(lists,this)
-    }
-
-    override fun listItemClicked(list: TaskList) {
+    override fun onFragmentInteraction(list: TaskList) {
         showListDetail(list)
     }
 

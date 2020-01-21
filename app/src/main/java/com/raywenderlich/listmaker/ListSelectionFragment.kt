@@ -6,10 +6,36 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
-class ListSelectionFragment : Fragment() {
+class ListSelectionFragment : Fragment(),
+    ListSelectionRecyclerViewAdapter.ListSelectionRecyclerViewClickListener {
 
-    private var listener: OnFragmentInteractionListener? = null
+    private var listener: OnListItemFragmentInteractionListener? = null
+    lateinit var listsRecyclerView: RecyclerView
+    lateinit var listDataManager: ListDataManager
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+
+        val lists = listDataManager.readLists()
+        view?.let {
+            listsRecyclerView = it.findViewById<RecyclerView>(R.id.lists_recyclerview)
+            listsRecyclerView.layoutManager = LinearLayoutManager(activity)
+            listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists, this)
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnListItemFragmentInteractionListener) {
+            listener = context
+            listDataManager = ListDataManager(context)
+        } else {
+            throw RuntimeException("$context must implement OnListItemFragmentInteractionListener")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,17 +46,7 @@ class ListSelectionFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_list_selection, container, false)
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is OnFragmentInteractionListener) {
-            listener = context
-        } else {
-            throw RuntimeException("$context must implement OnFragmentInteractionListener")
-        }
     }
 
     override fun onDetach() {
@@ -38,12 +54,32 @@ class ListSelectionFragment : Fragment() {
         listener = null
     }
 
-    interface OnFragmentInteractionListener {
-        fun onFragmentInteraction(list: TaskList)
+    fun addList(list: TaskList) {
+        listDataManager.saveList(list)
+
+        val recyclerViewAdapter = listsRecyclerView.adapter as ListSelectionRecyclerViewAdapter
+        recyclerViewAdapter.addList(list)
+    }
+
+    fun saveList(list: TaskList) {
+        listDataManager.saveList(list)
+        updateLists()
+    }
+
+    private fun updateLists() {
+        val lists = listDataManager.readLists()
+        listsRecyclerView.adapter = ListSelectionRecyclerViewAdapter(lists, this)
+    }
+
+    override fun listItemClicked(list: TaskList) {
+        listener?.onListItemClicked(list)
+    }
+
+    interface OnListItemFragmentInteractionListener {
+        fun onListItemClicked(list: TaskList)
     }
 
     companion object {
-        @JvmStatic
         fun newInstance(): ListSelectionFragment {
             return ListSelectionFragment()
         }

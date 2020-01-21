@@ -13,7 +13,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class ListDetailActivity : AppCompatActivity() {
 
-    lateinit var list: TaskList
+    lateinit var list:TaskList
     lateinit var listItemsRecyclerView: RecyclerView
     lateinit var addTasksButton: FloatingActionButton
 
